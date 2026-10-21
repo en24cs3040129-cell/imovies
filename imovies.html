@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IMovies - Movie Ticket Booking</title>
+<style>
+  * { box-sizing: border-box; }
+  :root { --bg:#101116; --panel:#1d1e27; --panel2:#22232d; --line:#34364a; --text:#fff; --muted:#a3a6b8; --accent:#f04452; --ok:#3ecf8e; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:Arial,sans-serif; line-height:1.5; }
+  a { color:inherit; }
+  code { background:var(--panel2); padding:2px 6px; border-radius:4px; }
+  .muted { color:var(--muted); }
+  .error { color:#ff8a93; }
+  .flash { margin:16px 6% 0; padding:10px 14px; border-radius:8px; }
+  .flash.ok { background:#1f3a2d; border:1px solid #2f6b4d; }
+  .flash.err { background:#3a1f24; border:1px solid #7b2630; }
+  .notice { background:#1f3a2d; border:1px solid #2f6b4d; padding:10px 14px; border-radius:8px; }
+
+  .navbar { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 6%; background:#191a22; flex-wrap:wrap; }
+  .navbar h1 { color:var(--accent); margin:0; cursor:pointer; }
+  .navbar nav { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .navbar nav a { text-decoration:none; color:var(--muted); cursor:pointer; }
+  .navbar nav a.active { color:var(--text); }
+  .page { padding:28px 6%; }
+  .page.narrow { max-width:480px; margin:0 auto; }
+
+  .hero { text-align:center; padding:60px 20px; background:var(--panel2); }
+  .hero input { width:min(100%,440px); padding:14px; border-radius:8px; border:1px solid #555; margin-top:18px; }
+
+  .movie-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:20px; }
+  .movie-card { padding:16px; background:var(--panel); border-radius:12px; overflow-wrap:anywhere; cursor:pointer; transition:transform .15s; }
+  .movie-card:hover { transform:translateY(-3px); }
+  .poster { width:100%; aspect-ratio:2/3; object-fit:cover; border-radius:8px; display:grid; place-items:center; font-size:64px; font-weight:bold; background:linear-gradient(135deg,#2b2d3d,#3b2230); color:var(--accent); }
+  .movie-card h3 { margin:12px 0 4px; }
+  .movie-card p { margin:2px 0; }
+  .detail { display:flex; gap:24px; margin-bottom:28px; flex-wrap:wrap; }
+  .detail .poster { width:200px; flex:none; }
+  .detail > div:last-child { flex:1; min-width:240px; }
+
+  .card { background:var(--panel); border-radius:12px; padding:18px; margin:16px 0; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .row.between { justify-content:space-between; }
+  .chips { display:flex; gap:10px; flex-wrap:wrap; margin:12px 0; }
+  .chip { background:var(--panel2); color:var(--text); border:1px solid var(--line); padding:8px 14px; border-radius:999px; cursor:pointer; font-size:14px; }
+  .chip.active { background:var(--accent); border-color:var(--accent); }
+  .show-chip { border-radius:10px; display:flex; flex-direction:column; align-items:center; }
+  .show-chip small { color:var(--muted); }
+  .btn { background:var(--accent); color:#fff; border:0; padding:12px 20px; border-radius:8px; cursor:pointer; font-size:15px; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn.ghost { background:transparent; border:1px solid var(--line); }
+  .btn.danger { background:#7b2630; }
+  .btn.small { padding:6px 12px; font-size:13px; }
+
+  .form { display:flex; flex-direction:column; gap:14px; }
+  .form label { display:flex; flex-direction:column; gap:6px; font-size:14px; color:var(--muted); }
+  .form input,.form select,.form textarea { padding:10px; border-radius:8px; border:1px solid var(--line); background:var(--panel2); color:var(--text); font:inherit; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .span2 { grid-column:span 2; }
+  .table-wrap { overflow-x:auto; margin-top:20px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th,td { text-align:left; padding:10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td.actions { white-space:nowrap; }
+  td.actions button { margin-right:6px; }
+
+  .screen { margin:24px auto 18px; max-width:520px; text-align:center; padding:8px; background:linear-gradient(#3a3d52,transparent); border-radius:50% 50% 0 0 / 30px 30px 0 0; color:var(--muted); letter-spacing:4px; font-size:12px; }
+  .seat-map { display:flex; flex-direction:column; align-items:center; gap:8px; overflow-x:auto; padding-bottom:8px; }
+  .seat-row { display:flex; gap:6px; align-items:center; }
+  .row-label { width:20px; color:var(--muted); font-size:13px; }
+  .seat { width:34px; height:34px; border-radius:6px 6px 3px 3px; border:1px solid var(--line); background:var(--panel2); color:var(--text); font-size:12px; cursor:pointer; padding:0; display:inline-block; }
+  .seat.selected { background:var(--accent); border-color:var(--accent); }
+  .seat.taken { background:#2a2b33; color:#5b5d6b; cursor:not-allowed; border-style:dashed; }
+  .legend { display:flex; gap:20px; justify-content:center; margin:16px 0; font-size:13px; color:var(--muted); }
+  .legend .seat { width:16px; height:16px; vertical-align:middle; margin-right:6px; cursor:default; }
+  .summary { max-width:520px; margin-left:auto; margin-right:auto; }
+
+  .ticket-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:24px; }
+  .ticket { background:var(--panel); border-left:4px solid var(--accent); border-radius:10px; padding:16px; }
+  .ticket h4 { margin:0; }
+  .ticket p { margin:6px 0; }
+  .ref { font-family:monospace; color:var(--muted); font-size:13px; }
+  .badge { padding:2px 10px; border-radius:999px; font-size:12px; text-transform:capitalize; background:var(--panel2); }
+  .badge.confirmed { background:#1f3a2d; color:var(--ok); }
+  .badge.pending { background:#3a331f; color:#f0c05a; }
+  .badge.cancelled { background:#3a1f24; color:#ff8a93; }
+  .footer { padding:24px 6%; color:var(--muted); font-size:13px; border-top:1px solid var(--line); margin-top:30px; }
+
+  @media (max-width:600px) {
+    .navbar { flex-direction:column; align-items:flex-start; }
+    .hero { padding:36px 16px; }
+    .grid2 { grid-template-columns:1fr; }
+    .span2 { grid-column:span 1; }
+    .seat { width:28px; height:28px; font-size:11px; }
+    .seat-row { gap:4px; }
+  }
+</style>
+</head>
+<body>
+<div id="nav"></div>
+<div id="flash"></div>
+<div id="app"></div>
+<div class="footer">
+  IMovies demo &middot; all data (accounts, movies, bookings) is stored only in this browser's localStorage.
+  Payments are a <strong>test checkout</strong> &mdash; no real money is taken.
+  <a href="#" onclick="resetDemo();return false;">Reset demo data</a>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   DATA LAYER  (localStorage "database")
+   ========================================================================= */
+var DB_KEY = "imovies_db_v1";
+var SESSION_KEY = "imovies_session_v1";
+var HOLD_MINUTES = 10;          // seats are held this long before checkout expires
+var MAX_SEATS = 8;              // max seats per booking
+var CANCEL_CUTOFF_HOURS = 2;    // customers may cancel until this long before the show
+var SEATS_PER_ROW_DEFAULT = 10;
+
+var memoryStore = {};           // fallback if localStorage is blocked
+function storeGet(k) { try { return localStorage.getItem(k); } catch (e) { return memoryStore[k] || null; } }
+function storeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { memoryStore[k] = v; } }
+function storeDel(k) { try { localStorage.removeItem(k); } catch (e) { delete memoryStore[k]; } }
+
+function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+function money(n) { return "₹" + Number(n).toLocaleString("en-IN"); }
+function fmtDT(v) {
+  return new Date(v).toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+}
+function fmtTime(v) { return new Date(v).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }); }
+function dayKey(d) {
+  d = new Date(d);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+/* Password hashing: salted SHA-256 via WebCrypto (demo-grade; a real site hashes on the server with bcrypt/argon2) */
+async function hashPassword(password, salt) {
+  var data = new TextEncoder().encode(salt + ":" + password);
+  if (typeof crypto !== "undefined" && crypto.subtle) {
+    var buf = await crypto.subtle.digest("SHA-256", data);
+    return Array.prototype.map.call(new Uint8Array(buf), function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+  }
+  var h = 5381; // fallback when WebCrypto is unavailable
+  for (var i = 0; i < data.length; i++) h = ((h * 33) ^ data[i]) >>> 0;
+  return "weak-" + h.toString(16);
+}
+
+async function makeUser(name, email, password, role) {
+  var salt = uid();
+  return { id: uid(), name: name, email: email.toLowerCase(), salt: salt, passwordHash: await hashPassword(password, salt), role: role || "user", createdAt: new Date().toISOString() };
+}
+
+async function seedDB() {
+  var movies = [
+    { title: "Midnight Express", description: "A retired detective boards one last overnight train and finds a case waiting for him.", genre: "Thriller", language: "English", duration: 118, status: "now_showing" },
+    { title: "Monsoon Melody", description: "Two street musicians in Mumbai chase a shot at the big stage.", genre: "Romance", language: "Hindi", duration: 142, status: "now_showing" },
+    { title: "Galaxy Runners", description: "A crew of delivery pilots takes a job that turns out to be anything but routine.", genre: "Sci-Fi", language: "English", duration: 126, status: "now_showing" },
+    { title: "The Last Laugh", description: "A struggling stand-up comic gets one night to save his old club.", genre: "Comedy", language: "Hindi", duration: 109, status: "now_showing" },
+    { title: "Echoes of Kaveri", description: "A family drama set along the banks of a river across three generations.", genre: "Drama", language: "Tamil", duration: 151, status: "now_showing" },
+    { title: "Iron Dawn", description: "An outnumbered unit defends a mountain pass in this action epic.", genre: "Action", language: "English", duration: 134, status: "coming_soon" }
+  ].map(function (m) { m.id = uid(); m.posterUrl = ""; m.releaseDate = ""; return m; });
+
+  var screens = [
+    { theatreName: "IMovies Cinemas - Indore", screenName: "Screen 1", price: 250, seatCount: 50 },
+    { theatreName: "IMovies Cinemas - Indore", screenName: "Screen 2", price: 180, seatCount: 40 }
+  ];
+  var shows = [];
+  movies.filter(function (m) { return m.status === "now_showing"; }).forEach(function (m, mi) {
+    for (var day = 0; day < 5; day++) {
+      [11, 14, 18, 21].slice(0, 2 + ((day + mi) % 3)).forEach(function (hour, hi) {
+        var t = new Date(); t.setDate(t.getDate() + day); t.setHours(hour, 0, 0, 0);
+        if (t > new Date()) {
+          var s = screens[(hi + day) % 2];
+          shows.push({ id: uid(), movieId: m.id, theatreName: s.theatreName, screenName: s.screenName, showTime: t.toISOString(), price: s.price, seatCount: s.seatCount, seatsPerRow: SEATS_PER_ROW_DEFAULT });
+        }
+      });
+    }
+  });
+
+  return {
+    users: [await makeUser("Admin", "admin@imovies.test", "AdminPass123!", "admin")],
+    movies: movies, shows: shows, bookings: []
+  };
+}
+
+var db = null;
+function loadDB() { try { return JSON.parse(storeGet(DB_KEY)); } catch (e) { return null; } }
+function saveDB() { storeSet(DB_KEY, JSON.stringify(db)); }
+function refreshDB() { var fresh = loadDB(); if (fresh) db = fresh; } // pick up changes from other tabs
+
+/* Free seats held by abandoned checkouts */
+function releaseExpiredHolds() {
+  var now = Date.now(), changed = false;
+  db.bookings.forEach(function (b) {
+    if (b.status === "pending" && b.holdExpiresAt && new Date(b.holdExpiresAt).getTime() < now) { b.status = "cancelled"; changed = true; }
+  });
+  if (changed) saveDB();
+}
+
+function seatLayout(show) {
+  var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", out = [];
+  for (var i = 0; i < show.seatCount; i++) out.push(letters[Math.floor(i / show.seatsPerRow)] + ((i % show.seatsPerRow) + 1));
+  return out;
+}
+function takenSeats(showId) {
+  var taken = {};
+  db.bookings.forEach(function (b) {
+    if (b.showId === showId && (b.status === "confirmed" || b.status === "pending")) b.seats.forEach(function (s) { taken[s] = true; });
+  });
+  return taken;
+}
+function byId(list, id) { return list.filter(function (x) { return x.id === id; })[0]; }
+
+/* =========================================================================
+   CORE BUSINESS LOGIC  (returns {error} or {ok/...}; never touches the DOM)
+   ========================================================================= */
+var core = {
+  async register(name, email, password) {
+    refreshDB();
+    name = String(name || "").trim(); email = String(email || "").trim().toLowerCase();
+    if (!name) return { error: "Name is required" };
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "Enter a valid email" };
+    if (String(password || "").length < 8) return { error: "Password must be at least 8 characters" };
+    if (db.users.some(function (u) { return u.email === email; })) return { error: "Email already registered" };
+    db.users.push(await makeUser(name, email, password, "user")); // role is never taken from input
+    saveDB();
+    return { ok: true };
+  },
+  async login(email, password) {
+    refreshDB();
+    var u = db.users.filter(function (x) { return x.email === String(email || "").trim().toLowerCase(); })[0];
+    if (!u || (await hashPassword(String(password || ""), u.salt)) !== u.passwordHash) return { error: "Invalid email or password" };
+    storeSet(SESSION_KEY, JSON.stringify({ userId: u.id, expires: Date.now() + 2 * 60 * 60 * 1000 })); // 2h session
+    return { ok: true, user: u };
+  },
+  currentUser() {
+    try {
+      var s = JSON.parse(storeGet(SESSION_KEY));
+      if (!s || s.expires < Date.now()) { storeDel(SESSION_KEY); return null; }
+      return byId(db.users, s.userId) || null;
+    } catch (e) { return null; }
+  },
+  logout() { storeDel(SESSION_KEY); },
+
+  /* Hold seats. Re-reads storage immediately before checking, then checks + writes in one
+     synchronous block (JS is single-threaded), so two bookings can never take the same seat. */
+  createBooking(userId, showId, seats) {
+    refreshDB(); releaseExpiredHolds();
+    var user = byId(db.users, userId);
+    if (!user) return { error: "Please log in" };
+    var show = byId(db.shows, showId);
+    if (!show) return { error: "Show not found" };
+    if (new Date(show.showTime) <= new Date()) return { error: "This show has already started" };
+    if (!Array.isArray(seats) || seats.length < 1 || seats.length > MAX_SEATS) return { error: "Select 1 to " + MAX_SEATS + " seats" };
+    var unique = {}; seats.forEach(function (s) { unique[String(s).toUpperCase()] = true; });
+    var wanted = Object.keys(unique);
+    if (wanted.length !== seats.length) return { error: "Duplicate seats in request" };
+    var valid = {}; seatLayout(show).forEach(function (s) { valid[s] = true; });
+    if (wanted.some(function (s) { return !valid[s]; })) return { error: "One or more seats do not exist for this show" };
+    var taken = takenSeats(showId);
+    if (wanted.some(function (s) { return taken[s]; })) return { error: "One or more of those seats were just taken. Please pick different seats.", conflict: true };
+
+    var booking = {
+      id: uid(), reference: "IMV-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase(),
+      userId: userId, showId: showId, seats: wanted,
+      totalAmount: show.price * wanted.length,           // price is always computed here, never from the UI
+      status: "pending", paymentStatus: "unpaid",
+      holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60000).toISOString(), createdAt: new Date().toISOString()
+    };
+    db.bookings.push(booking); saveDB();
+    return { ok: true, booking: booking };
+  },
+  /* TEST checkout: pending -> confirmed, only while the hold is valid */
+  payBooking(userId, bookingId) {
+    refreshDB();
+    var b = byId(db.bookings, bookingId);
+    if (!b || b.userId !== userId) return { error: "Booking not found" };
+    if (b.status !== "pending" || !b.holdExpiresAt || new Date(b.holdExpiresAt) <= new Date()) {
+      releaseExpiredHolds();
+      return { error: "This booking can no longer be confirmed (hold expired or already processed)." };
+    }
+    b.status = "confirmed"; b.paymentStatus = "test_paid"; delete b.holdExpiresAt; saveDB();
+    return { ok: true, booking: b };
+  },
+  cancelBooking(user, bookingId) {
+    refreshDB();
+    var b = byId(db.bookings, bookingId);
+    if (!b) return { error: "Booking not found" };
+    if (b.userId !== user.id && user.role !== "admin") return { error: "Not your booking" };
+    if (b.status === "cancelled") return { error: "Booking is already cancelled" };
+    var show = byId(db.shows, b.showId);
+    if (user.role !== "admin" && show && Date.now() > new Date(show.showTime).getTime() - CANCEL_CUTOFF_HOURS * 3600000)
+      return { error: "Bookings can only be cancelled up to " + CANCEL_CUTOFF_HOURS + " hours before the show." };
+    if (b.paymentStatus === "test_paid") b.paymentStatus = "refunded";
+    b.status = "cancelled"; delete b.holdExpiresAt; saveDB();
+    return { ok: true };
+  }
+};
+
+/* =========================================================================
+   UI
+   ========================================================================= */
+var ui = { search: "", date: null, selected: [], held: null, timer: null, editMovieId: null, adminTab: "movies" };
+
+function flash(msg, type) {
+  document.getElementById("flash").innerHTML = msg ? '<div class="flash ' + (type === "err" ? "err" : "ok") + '" role="alert">' + esc(msg) + "</div>" : "";
+}
+function go(hash) { if (location.hash === "#" + hash) render(); else location.hash = hash; }
+
+function renderNav() {
+  var u = core.currentUser(), r = location.hash.slice(1).split("/")[0];
+  function link(h, label) { return '<a class="' + (r === h ? "active" : "") + '" onclick="go(\'' + h + '\')">' + label + "</a>"; }
+  document.getElementById("nav").innerHTML =
+    '<header class="navbar"><h1 onclick="go(\'\')">IMovies</h1><nav>' + link("", "Movies") +
+    (u ? link("bookings", "My Bookings") : "") + (u && u.role === "admin" ? link("admin", "Admin") : "") +
+    (u ? '<span class="muted">Hi, ' + esc(u.name) + '</span><button class="btn small ghost" onclick="doLogout()">Log out</button>'
+       : link("login", "Log in") + link("register", "Sign up")) + "</nav></header>";
+}
+
+function render() {
+  refreshDB(); releaseExpiredHolds();
+  if (ui.timer) { clearInterval(ui.timer); ui.timer = null; }
+  var parts = location.hash.slice(1).split("/"), route = parts[0], arg = parts[1], user = core.currentUser();
+  renderNav();
+  var el = document.getElementById("app");
+  if (["seats", "bookings", "admin"].indexOf(route) >= 0 && !user) { flash("Please log in first.", "err"); return go("login"); }
+  if (route === "admin" && user.role !== "admin") return go("");
+  if (route === "") el.innerHTML = viewHome();
+  else if (route === "movie") el.innerHTML = viewMovie(arg);
+  else if (route === "seats") { el.innerHTML = viewSeats(arg); startCountdown(); }
+  else if (route === "login") el.innerHTML = viewLogin();
+  else if (route === "register") el.innerHTML = viewRegister();
+  else if (route === "bookings") el.innerHTML = viewBookings(user);
+  else if (route === "admin") el.innerHTML = viewAdmin();
+  else el.innerHTML = '<main class="page"><p>Page not found.</p></main>';
+}
+window.addEventListener("hashchange", function () { flash(""); ui.selected = []; ui.held = null; render(); });
+
+/* ---------- Home ---------- */
+function movieCard(m) {
+  return '<div class="movie-card" onclick="go(\'movie/' + m.id + '\')">' +
+    (m.posterUrl ? '<img class="poster" src="' + esc(m.posterUrl) + '" alt="' + esc(m.title) + ' poster" onerror="this.outerHTML=\'<div class=poster>' + esc(m.title.charAt(0)) + '</div>\'">'
+                 : '<div class="poster">' + esc(m.title.charAt(0)) + "</div>") +
+    "<h3>" + esc(m.title) + '</h3><p class="muted">' + esc(m.genre) + " &middot; " + esc(m.language) + '</p><p class="muted">' + esc(m.duration) + " minutes</p></div>";
+}
+function viewHome() {
+  var q = ui.search.toLowerCase();
+  var list = db.movies.filter(function (m) { return !q || m.title.toLowerCase().indexOf(q) >= 0; }).sort(function (a, b) { return a.title.localeCompare(b.title); });
+  var now = list.filter(function (m) { return m.status !== "coming_soon"; }), soon = list.filter(function (m) { return m.status === "coming_soon"; });
+  return '<section class="hero"><h2>Find Your Next Movie</h2><p>Discover movies and plan your next cinema experience.</p>' +
+    '<input id="search" value="' + esc(ui.search) + '" placeholder="Search movies..." aria-label="Search movies" oninput="onSearch(this)"></section>' +
+    '<main class="page"><div id="movieLists">' + movieLists(now, soon, list.length) + "</div></main>";
+}
+function movieLists(now, soon, total) {
+  return (total === 0 ? '<p class="muted">No movies found.</p>' : "") +
+    (now.length ? "<h2>Now Showing</h2><div class='movie-grid'>" + now.map(movieCard).join("") + "</div>" : "") +
+    (soon.length ? "<h2>Coming Soon</h2><div class='movie-grid'>" + soon.map(movieCard).join("") + "</div>" : "");
+}
+function onSearch(input) {
+  ui.search = input.value;
+  var q = ui.search.toLowerCase();
+  var list = db.movies.filter(function (m) { return !q || m.title.toLowerCase().indexOf(q) >= 0; }).sort(function (a, b) { return a.title.localeCompare(b.title); });
+  document.getElementById("movieLists").innerHTML = movieLists(
+    list.filter(function (m) { return m.status !== "coming_soon"; }), list.filter(function (m) { return m.status === "coming_soon"; }), list.length);
+}
+
+/* ---------- Movie detail + showtimes ---------- */
+function viewMovie(id) {
+  var m = byId(db.movies, id);
+  if (!m) return '<main class="page"><p class="error">Movie not found.</p></main>';
+  var days = []; for (var i = 0; i < 7; i++) days.push(dayKey(new Date(Date.now() + i * 86400000)));
+  if (!ui.date || days.indexOf(ui.date) < 0) ui.date = days[0];
+  var shows = db.shows.filter(function (s) { return s.movieId === id && dayKey(s.showTime) === ui.date && new Date(s.showTime) > new Date(); })
+    .sort(function (a, b) { return new Date(a.showTime) - new Date(b.showTime); });
+  var byTheatre = {}; shows.forEach(function (s) { (byTheatre[s.theatreName] = byTheatre[s.theatreName] || []).push(s); });
+
+  return '<main class="page"><div class="detail">' +
+    (m.posterUrl ? '<img class="poster" src="' + esc(m.posterUrl) + '" alt="' + esc(m.title) + ' poster">' : '<div class="poster">' + esc(m.title.charAt(0)) + "</div>") +
+    "<div><h2>" + esc(m.title) + '</h2><p class="muted">' + esc(m.genre) + " &middot; " + esc(m.language) + " &middot; " + esc(m.duration) + " min</p><p>" + esc(m.description) + "</p></div></div>" +
+    "<h2>Showtimes</h2><div class='chips'>" +
+    days.map(function (d) {
+      var label = new Date(d + "T12:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+      return '<button class="chip ' + (d === ui.date ? "active" : "") + '" onclick="setDate(\'' + d + '\')">' + label + "</button>";
+    }).join("") + "</div>" +
+    (m.status === "coming_soon" ? '<p class="muted">This movie is coming soon.</p>' : "") +
+    (!shows.length && m.status !== "coming_soon" ? '<p class="muted">No shows on this date.</p>' : "") +
+    Object.keys(byTheatre).map(function (t) {
+      return '<div class="card"><h3>' + esc(t) + '</h3><div class="chips">' + byTheatre[t].map(function (s) {
+        return '<button class="chip show-chip" onclick="go(\'seats/' + s.id + '\')">' + fmtTime(s.showTime) + "<small>" + esc(s.screenName) + " &middot; " + money(s.price) + "</small></button>";
+      }).join("") + "</div></div>";
+    }).join("") + "</main>";
+}
+function setDate(d) { ui.date = d; render(); }
+
+/* ---------- Seat selection ---------- */
+function viewSeats(showId) {
+  var show = byId(db.shows, showId);
+  if (!show) return '<main class="page"><p class="error">Show not found.</p></main>';
+  var movie = byId(db.movies, show.movieId) || { title: "Movie" };
+  var taken = takenSeats(showId);
+  // seats held by *this* user's current pending booking are not "unavailable" to them
+  var mine = ui.held && ui.held.showId === showId ? ui.held.seats : [];
+  var rows = {};
+  seatLayout(show).forEach(function (id) { (rows[id.charAt(0)] = rows[id.charAt(0)] || []).push(id); });
+  var total = ui.selected.length * show.price;
+
+  var map = Object.keys(rows).map(function (letter) {
+    return '<div class="seat-row"><span class="row-label">' + letter + "</span>" + rows[letter].map(function (id) {
+      var isMine = mine.indexOf(id) >= 0, sel = ui.selected.indexOf(id) >= 0 || isMine, unavailable = taken[id] && !isMine;
+      return '<button class="seat ' + (unavailable ? "taken" : sel ? "selected" : "") + '" ' + (unavailable || ui.held ? "disabled" : "") +
+        ' onclick="toggleSeat(\'' + showId + "','" + id + '\')" aria-label="Seat ' + id + " " + (unavailable ? "unavailable" : "available") + '">' + id.slice(1) + "</button>";
+    }).join("") + "</div>";
+  }).join("");
+
+  var actions;
+  if (!ui.held) {
+    actions = '<button class="btn" ' + (ui.selected.length ? "" : "disabled") + " onclick=\"holdSeats('" + showId + "')\">Hold seats &amp; continue</button>";
+  } else {
+    actions = '<p class="notice">Seats held for you: <strong id="countdown">--:--</strong>. Total: ' + money(ui.held.totalAmount) + ".</p>" +
+      '<p class="muted"><strong>Test checkout:</strong> no real payment is taken. This confirms your booking for demonstration only.</p>' +
+      '<div class="row"><button class="btn" onclick="payHeld()">Confirm booking (test payment)</button><button class="btn ghost" onclick="releaseHeld()">Release seats</button></div>';
+  }
+  return '<main class="page"><h2>' + esc(movie.title) + '</h2><p class="muted">' + esc(show.theatreName) + " &middot; " + esc(show.screenName) + " &middot; " + fmtDT(show.showTime) + " &middot; " + money(show.price) + "/seat</p>" +
+    '<div class="screen">CINEMA SCREEN</div><div class="seat-map">' + map + "</div>" +
+    '<div class="legend"><span><i class="seat"></i> Available</span><span><i class="seat selected"></i> Selected</span><span><i class="seat taken"></i> Unavailable</span></div>' +
+    '<div class="card summary"><p><strong>Selected seats:</strong> ' + (ui.held ? ui.held.seats.join(", ") : ui.selected.length ? ui.selected.join(", ") : "None") + "</p>" +
+    "<p><strong>Total:</strong> " + money(ui.held ? ui.held.totalAmount : total) + "</p>" + actions + "</div></main>";
+}
+function toggleSeat(showId, seat) {
+  if (ui.held) return;
+  var i = ui.selected.indexOf(seat);
+  if (i >= 0) ui.selected.splice(i, 1);
+  else if (ui.selected.length < MAX_SEATS) ui.selected.push(seat);
+  else flash("You can select at most " + MAX_SEATS + " seats.", "err");
+  var saved = document.getElementById("flash").innerHTML; render(); if (saved && ui.selected.length === MAX_SEATS) flash("You can select at most " + MAX_SEATS + " seats.", "err");
+}
+function holdSeats(showId) {
+  var u = core.currentUser(); if (!u) return go("login");
+  var r = core.createBooking(u.id, showId, ui.selected.slice());
+  if (r.error) { if (r.conflict) ui.selected = []; render(); return flash(r.error, "err"); }
+  ui.held = r.booking; render();
+}
+function payHeld() {
+  var u = core.currentUser(); if (!u || !ui.held) return;
+  var r = core.payBooking(u.id, ui.held.id);
+  if (r.error) { ui.held = null; ui.selected = []; render(); return flash(r.error, "err"); }
+  var ref = r.booking.reference; ui.held = null; ui.selected = [];
+  go("bookings"); flash("Booking confirmed! Reference: " + ref, "ok");
+}
+function releaseHeld() {
+  var u = core.currentUser(); if (u && ui.held) core.cancelBooking(u, ui.held.id);
+  ui.held = null; ui.selected = []; render();
+}
+function startCountdown() {
+  if (!ui.held) return;
+  var tick = function () {
+    var el = document.getElementById("countdown"); if (!el || !ui.held) return;
+    var left = Math.max(0, Math.round((new Date(ui.held.holdExpiresAt) - Date.now()) / 1000));
+    el.textContent = String(Math.floor(left / 60)).padStart(2, "0") + ":" + String(left % 60).padStart(2, "0");
+    if (left === 0) { ui.held = null; ui.selected = []; render(); flash("Your seat hold expired. Please select seats again.", "err"); }
+  };
+  tick(); ui.timer = setInterval(tick, 1000);
+}
+
+/* ---------- Auth ---------- */
+function viewLogin() {
+  return '<main class="page narrow"><h2>Log in</h2><form class="card form" onsubmit="doLogin(event)">' +
+    '<label>Email<input id="email" type="email" required></label><label>Password<input id="password" type="password" required></label>' +
+    '<button class="btn">Log in</button><p class="muted">No account? <a href="#register">Sign up</a></p>' +
+    '<p class="muted">Demo admin: <code>admin@imovies.test</code> / <code>AdminPass123!</code></p></form></main>';
+}
+function viewRegister() {
+  return '<main class="page narrow"><h2>Create an account</h2><form class="card form" onsubmit="doRegister(event)">' +
+    '<label>Name<input id="name" required></label><label>Email<input id="email" type="email" required></label>' +
+    '<label>Password (min 8 characters)<input id="password" type="password" required minlength="8"></label>' +
+    '<button class="btn">Sign up</button><p class="muted">Already registered? <a href="#login">Log in</a></p></form></main>';
+}
+async function doLogin(e) {
+  e.preventDefault();
+  var r = await core.login(document.getElementById("email").value, document.getElementById("password").value);
+  if (r.error) return flash(r.error, "err");
+  go(r.user.role === "admin" ? "admin" : "");
+}
+async function doRegister(e) {
+  e.preventDefault();
+  var r = await core.register(document.getElementById("name").value, document.getElementById("email").value, document.getElementById("password").value);
+  if (r.error) return flash(r.error, "err");
+  go("login"); flash("Registration successful. Please log in.", "ok");
+}
+function doLogout() { core.logout(); ui.selected = []; ui.held = null; go(""); }
+
+/* ---------- My bookings ---------- */
+function ticketHTML(b, canCancel, showUser) {
+  var s = byId(db.shows, b.showId) || {}, m = byId(db.movies, s.movieId) || { title: "(removed movie)" };
+  return '<article class="ticket"><div class="row between"><h4>' + esc(m.title) + '</h4><span class="badge ' + b.status + '">' + b.status + "</span></div>" +
+    '<p class="muted">' + esc(s.theatreName) + " &middot; " + esc(s.screenName) + "</p><p>" + (s.showTime ? fmtDT(s.showTime) : "") + "</p>" +
+    "<p><strong>Seats:</strong> " + esc(b.seats.join(", ")) + "</p><p><strong>Total:</strong> " + money(b.totalAmount) + ' <span class="muted">(' + esc(b.paymentStatus.replace("_", " ")) + ")</span></p>" +
+    '<p class="ref">Ref: ' + esc(b.reference) + "</p>" +
+    (canCancel && b.status !== "cancelled" ? '<button class="btn small ghost" onclick="doCancel(\'' + b.id + '\')">Cancel booking</button>' : "") + "</article>";
+}
+function viewBookings(user) {
+  var mine = db.bookings.filter(function (b) { return b.userId === user.id; }).sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+  var now = Date.now();
+  var upcoming = mine.filter(function (b) { var s = byId(db.shows, b.showId); return b.status !== "cancelled" && s && new Date(s.showTime) > now; });
+  var past = mine.filter(function (b) { return upcoming.indexOf(b) < 0; });
+  return '<main class="page"><h2>My Bookings</h2>' + (mine.length ? "" : '<p class="muted">You have no bookings yet.</p>') +
+    (upcoming.length ? '<h3>Upcoming</h3><div class="ticket-grid">' + upcoming.map(function (b) { return ticketHTML(b, true); }).join("") + "</div>" : "") +
+    (past.length ? '<h3>Past &amp; cancelled</h3><div class="ticket-grid">' + past.map(function (b) { return ticketHTML(b, false); }).join("") + "</div>" : "") + "</main>";
+}
+function doCancel(id) {
+  if (!confirm("Cancel this booking?")) return;
+  var r = core.cancelBooking(core.currentUser(), id);
+  render(); if (r.error) flash(r.error, "err"); else flash("Booking cancelled.", "ok");
+}
+
+/* ---------- Admin ---------- */
+function viewAdmin() {
+  var tabs = ["movies", "shows", "bookings"].map(function (t) {
+    return '<button class="chip ' + (ui.adminTab === t ? "active" : "") + '" onclick="setAdminTab(\'' + t + '\')">' + t.charAt(0).toUpperCase() + t.slice(1) + "</button>";
+  }).join("");
+  var body = ui.adminTab === "movies" ? adminMovies() : ui.adminTab === "shows" ? adminShows() : adminBookings();
+  return '<main class="page"><h2>Admin</h2><div class="chips">' + tabs + "</div>" + body + "</main>";
+}
+function setAdminTab(t) { ui.adminTab = t; ui.editMovieId = null; render(); }
+function val(id) { return document.getElementById(id).value; }
+
+function adminMovies() {
+  var m = ui.editMovieId ? byId(db.movies, ui.editMovieId) : null;
+  m = m || { title: "", genre: "", language: "", duration: 120, posterUrl: "", releaseDate: "", status: "now_showing", description: "" };
+  var form = '<form class="card form grid2" onsubmit="saveMovie(event)"><h3 class="span2">' + (ui.editMovieId ? "Edit movie" : "Add movie") + "</h3>" +
+    '<label>Title<input id="m_title" required value="' + esc(m.title) + '"></label><label>Genre<input id="m_genre" required value="' + esc(m.genre) + '"></label>' +
+    '<label>Language<input id="m_language" required value="' + esc(m.language) + '"></label><label>Duration (min)<input id="m_duration" type="number" min="1" required value="' + esc(m.duration) + '"></label>' +
+    '<label>Poster URL<input id="m_posterUrl" value="' + esc(m.posterUrl) + '"></label><label>Release date<input id="m_releaseDate" type="date" value="' + esc(m.releaseDate) + '"></label>' +
+    '<label>Status<select id="m_status"><option value="now_showing"' + (m.status === "now_showing" ? " selected" : "") + '>Now showing</option><option value="coming_soon"' + (m.status === "coming_soon" ? " selected" : "") + ">Coming soon</option></select></label>" +
+    '<label class="span2">Description<textarea id="m_description" required rows="3">' + esc(m.description) + "</textarea></label>" +
+    '<div class="row span2"><button class="btn">' + (ui.editMovieId ? "Save changes" : "Add movie") + "</button>" +
+    (ui.editMovieId ? '<button type="button" class="btn ghost" onclick="ui.editMovieId=null;render()">Cancel edit</button>' : "") + "</div></form>";
+  var rows = db.movies.slice().sort(function (a, b) { return a.title.localeCompare(b.title); }).map(function (x) {
+    return "<tr><td>" + esc(x.title) + "</td><td>" + esc(x.genre) + "</td><td>" + esc(x.language) + "</td><td>" + x.status.replace("_", " ") + '</td><td class="actions">' +
+      '<button class="btn small ghost" onclick="editMovie(\'' + x.id + '\')">Edit</button><button class="btn small danger" onclick="deleteMovie(\'' + x.id + '\')">Delete</button></td></tr>';
+  }).join("");
+  return form + '<div class="table-wrap"><table><thead><tr><th>Title</th><th>Genre</th><th>Language</th><th>Status</th><th></th></tr></thead><tbody>' + rows + "</tbody></table></div>";
+}
+function saveMovie(e) {
+  e.preventDefault(); refreshDB();
+  var data = { title: val("m_title").trim(), genre: val("m_genre").trim(), language: val("m_language").trim(), duration: Number(val("m_duration")),
+    posterUrl: val("m_posterUrl").trim(), releaseDate: val("m_releaseDate"), status: val("m_status"), description: val("m_description").trim() };
+  if (ui.editMovieId) Object.assign(byId(db.movies, ui.editMovieId), data);
+  else { data.id = uid(); db.movies.push(data); }
+  saveDB(); ui.editMovieId = null; render(); flash("Movie saved.", "ok");
+}
+function editMovie(id) { ui.editMovieId = id; render(); window.scrollTo(0, 0); }
+function deleteMovie(id) {
+  refreshDB();
+  var showIds = db.shows.filter(function (s) { return s.movieId === id; }).map(function (s) { return s.id; });
+  if (db.bookings.some(function (b) { return showIds.indexOf(b.showId) >= 0 && b.status !== "cancelled"; })) return flash("Movie has active bookings. Cancel those bookings before deleting.", "err");
+  if (!confirm("Delete this movie and its shows?")) return;
+  db.movies = db.movies.filter(function (m) { return m.id !== id; });
+  db.shows = db.shows.filter(function (s) { return s.movieId !== id; });
+  saveDB(); render(); flash("Movie deleted.", "ok");
+}
+
+function adminShows() {
+  var opts = db.movies.map(function (m) { return '<option value="' + m.id + '">' + esc(m.title) + "</option>"; }).join("");
+  var form = '<form class="card form grid2" onsubmit="saveShow(event)"><h3 class="span2">Create show</h3>' +
+    '<label class="span2">Movie<select id="s_movie" required>' + opts + "</select></label>" +
+    '<label>Theatre<input id="s_theatre" required value="IMovies Cinemas - Indore"></label><label>Screen<input id="s_screen" required value="Screen 1"></label>' +
+    '<label>Show time<input id="s_time" type="datetime-local" required></label><label>Price (₹)<input id="s_price" type="number" min="0" required value="250"></label>' +
+    '<label>Total seats<input id="s_count" type="number" min="1" max="260" required value="50"></label><label>Seats per row<input id="s_perrow" type="number" min="1" max="26" required value="10"></label>' +
+    '<div class="span2"><button class="btn"' + (db.movies.length ? "" : " disabled") + ">Create show</button></div></form>";
+  var rows = db.shows.slice().sort(function (a, b) { return new Date(a.showTime) - new Date(b.showTime); }).map(function (s) {
+    var m = byId(db.movies, s.movieId) || { title: "?" };
+    return "<tr><td>" + esc(m.title) + "</td><td>" + esc(s.theatreName) + " &middot; " + esc(s.screenName) + "</td><td>" + fmtDT(s.showTime) + "</td><td>" + money(s.price) + "</td><td>" + s.seatCount +
+      '</td><td class="actions"><button class="btn small danger" onclick="deleteShow(\'' + s.id + '\')">Delete</button></td></tr>';
+  }).join("");
+  return form + '<div class="table-wrap"><table><thead><tr><th>Movie</th><th>Theatre</th><th>When</th><th>Price</th><th>Seats</th><th></th></tr></thead><tbody>' + rows + "</tbody></table></div>";
+}
+function saveShow(e) {
+  e.preventDefault(); refreshDB();
+  var count = Number(val("s_count")), perRow = Number(val("s_perrow"));
+  if (Math.ceil(count / perRow) > 26) return flash("Too many rows: increase seats per row.", "err");
+  db.shows.push({ id: uid(), movieId: val("s_movie"), theatreName: val("s_theatre").trim(), screenName: val("s_screen").trim(),
+    showTime: new Date(val("s_time")).toISOString(), price: Number(val("s_price")), seatCount: count, seatsPerRow: perRow });
+  saveDB(); render(); flash("Show created.", "ok");
+}
+function deleteShow(id) {
+  refreshDB(); releaseExpiredHolds();
+  if (db.bookings.some(function (b) { return b.showId === id && b.status !== "cancelled"; })) return flash("Show has booked seats. Cancel those bookings first.", "err");
+  if (!confirm("Delete this show?")) return;
+  db.shows = db.shows.filter(function (s) { return s.id !== id; }); saveDB(); render(); flash("Show deleted.", "ok");
+}
+
+function adminBookings() {
+  var rows = db.bookings.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); }).map(function (b) {
+    var u = byId(db.users, b.userId) || { name: "?", email: "" }, s = byId(db.shows, b.showId) || {}, m = byId(db.movies, s.movieId) || { title: "?" };
+    return "<tr><td>" + esc(b.reference) + "</td><td>" + esc(u.name) + '<br><small class="muted">' + esc(u.email) + "</small></td><td>" + esc(m.title) + "</td><td>" + (s.showTime ? fmtDT(s.showTime) : "") +
+      "</td><td>" + esc(b.seats.join(", ")) + "</td><td>" + money(b.totalAmount) + '</td><td><span class="badge ' + b.status + '">' + b.status + '</span></td><td class="actions">' +
+      (b.status !== "cancelled" ? '<button class="btn small danger" onclick="adminCancel(\'' + b.id + '\')">Cancel</button>' : "") + "</td></tr>";
+  }).join("");
+  return (rows ? "" : '<p class="muted">No bookings yet.</p>') +
+    '<div class="table-wrap"><table><thead><tr><th>Ref</th><th>Customer</th><th>Movie</th><th>Show</th><th>Seats</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>' + rows + "</tbody></table></div>";
+}
+function adminCancel(id) {
+  if (!confirm("Cancel this booking?")) return;
+  var r = core.cancelBooking(core.currentUser(), id); render(); if (r.error) flash(r.error, "err"); else flash("Booking cancelled.", "ok");
+}
+
+/* ---------- Boot ---------- */
+function resetDemo() {
+  if (!confirm("Reset ALL demo data (accounts, movies, bookings)?")) return;
+  storeDel(DB_KEY); storeDel(SESSION_KEY); location.hash = ""; location.reload();
+}
+async function boot() {
+  db = loadDB();
+  if (!db || !db.users) { db = await seedDB(); saveDB(); }
+  render();
+}
+if (typeof document !== "undefined" && document.getElementById("app")) boot();
+</script>
+</body>
+</html>
