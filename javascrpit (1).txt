@@ -1,0 +1,36 @@
+imovies-app/
+│
+├── backend/
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Movie.js
+│   │   ├── Theatre.js
+│   │   ├── Show.js
+│   │   └── Booking.js
+│   ├── routes/
+│   │   ├── authRoutes.js
+│   │   ├── movieRoutes.js
+│   │   └── bookingRoutes.js
+│   ├── middleware/
+│   │   └── authMiddleware.js
+│   ├── .env
+│   ├── package.json
+│   └── server.js
+│
+└── frontend/
+    ├── public/
+    │   └── index.html
+    ├── src/
+    │   ├── components/
+    │   │   ├── Navbar.jsx
+    │   │   ├── SeatMatrix.jsx
+    │   │   └── ReviewSection.jsx
+    │   ├── pages/
+    │   │   ├── LoginPage.jsx
+    │   │   ├── MovieDetailsPage.jsx
+    │   │   ├── ProfilePage.jsx
+    │   │   └── AdminDashboard.jsx
+    │   ├── App.jsx
+    │   ├── index.js
+    │   └── styles.css
+    └── package.json

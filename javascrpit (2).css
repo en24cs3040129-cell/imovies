@@ -1,0 +1,119 @@
+:root {
+  --bg-primary: #0a0f1d;
+  --bg-secondary: #111827;
+  --bg-card: #162032;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --accent-red: #e50914;
+  --border-color: #232f46;
+  --seat-avail-bg: #0f172a;
+  --seat-avail-border: #dc2626;
+  --seat-selected-bg: #e50914;
+  --seat-booked-bg: #374151;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --seat-avail-bg: #f1f5f9;
+  --seat-avail-border: #ef4444;
+}
+
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.brand-title {
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: -0.5px;
+}
+.brand-title span {
+  color: var(--accent-red);
+}
+
+.bg-imovies-dark {
+  background-color: var(--bg-secondary) !important;
+}
+
+.card-imovies {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.card-imovies:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(229, 9, 20, 0.15);
+}
+
+.btn-crimson {
+  background-color: var(--accent-red);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+.btn-crimson:hover {
+  background-color: #b80710;
+  color: #fff;
+  box-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
+}
+
+/* Seat Matrix Styling */
+.screen-curve {
+  height: 6px;
+  background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+  border-radius: 50%;
+  box-shadow: 0 4px 15px rgba(56, 189, 248, 0.6);
+}
+
+.seat-box {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease-in-out;
+}
+
+.seat-box.available {
+  background-color: var(--seat-avail-bg);
+  border: 1.5px solid var(--seat-avail-border);
+  color: var(--text-main);
+}
+.seat-box.available:hover {
+  background-color: var(--seat-selected-bg);
+  color: #fff;
+  transform: scale(1.15);
+}
+
+.seat-box.selected {
+  background-color: var(--seat-selected-bg);
+  border: 1.5px solid #fff;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(229, 9, 20, 0.8);
+}
+
+.seat-box.occupied {
+  background-color: var(--seat-booked-bg);
+  border: 1.5px solid #4b5563;
+  color: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
